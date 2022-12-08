@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load cache %}
+
+{% block title %}
+  Записи избранных авторов
+{% endblock %}
+
+{% block content %}
+  <div class="container py-5">
+    {% include 'posts/includes/switcher.html' %}
+    {% cache 20 page_obj request %}
+      {% for post in page_obj %}
+        {% include 'posts/includes/post_list.html' %}
+      {% endfor %}
+    {% endcache %}
+    {% include 'posts/includes/paginator.html' %}
+  </div> 
+{% endblock %} 
