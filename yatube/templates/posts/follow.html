@@ -8,7 +8,7 @@
 {% block content %}
   <div class="container py-5">
     {% include 'posts/includes/switcher.html' %}
-    {% cache 20 page_obj request %}
+    {% cache 20 page_obj page_number follows request.user.username %}
       {% for post in page_obj %}
         {% include 'posts/includes/post_list.html' %}
       {% endfor %}

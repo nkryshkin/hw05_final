@@ -33,6 +33,11 @@ class TaskCreateFormTests(TestCase):
             content=small_gif,
             content_type='image/gif'
         )
+        cls.uploaded_1 = SimpleUploadedFile(
+            name='small_1.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-group-slug',
@@ -55,32 +60,32 @@ class TaskCreateFormTests(TestCase):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
-    def setUp(cls):
-        cls.guest_client = Client()
-        cls.authorized_client = Client()
-        cls.authorized_client.force_login(cls.user)
+    def setUp(self):
+        self.guest_client = Client()
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
 
-    def test_create_post(cls):
+    def test_create_post(self):
         """Валидная форма создает запись в Post."""
         post_count = Post.objects.count()
-        user_name = cls.user.username
-        group_id = cls.group.id
-        user_id = cls.user.id
-        post_image = cls.uploaded
+        user_name = self.user.username
+        group_id = self.group.id
+        user_id = self.user.id
+        post_image = self.uploaded
         form_data = {
             'text': 'Тестовый текст номер 2',
             'group': group_id,
             'image': post_image
         }
-        response = cls.authorized_client.post(
+        response = self.authorized_client.post(
             reverse('posts:post_create'),
             data=form_data,
             follow=True
         )
-        cls.assertRedirects(response, reverse(
+        self.assertRedirects(response, reverse(
             'posts:profile', kwargs={'username': user_name}))
-        cls.assertEqual(Post.objects.count(), post_count + 1)
-        cls.assertTrue(
+        self.assertEqual(Post.objects.count(), post_count + 1)
+        self.assertTrue(
             Post.objects.filter(
                 author=user_id,
                 text=form_data['text'],
@@ -89,51 +94,54 @@ class TaskCreateFormTests(TestCase):
             ).exists()
         )
 
-    def test_edit_post(cls):
+    def test_edit_post(self):
         """Валидная форма изменяет запись в Post."""
         post_count = Post.objects.count()
-        post_id = cls.post.id
-        group_2_id = cls.group_2.id
-        user_id = cls.user.id
+        post_id = self.post.id
+        group_2_id = self.group_2.id
+        user_id = self.user.id
+        post_image = self.uploaded_1
         form_data = {
             'text': 'Тестовый текст номер 3',
-            'group': group_2_id
+            'group': group_2_id,
+            'image': post_image
         }
-        response = cls.authorized_client.post(
+        response = self.authorized_client.post(
             reverse('posts:post_edit', kwargs={'post_id': post_id}),
             data=form_data,
             follow=True
         )
-        cls.assertRedirects(response, reverse(
+        self.assertRedirects(response, reverse(
             'posts:post_detail', kwargs={'post_id': post_id}))
-        cls.assertEqual(Post.objects.count(), post_count)
-        cls.assertTrue(
+        self.assertEqual(Post.objects.count(), post_count)
+        self.assertTrue(
             Post.objects.filter(
                 id=post_id,
                 author=user_id,
                 text=form_data['text'],
-                group=group_2_id
+                group=group_2_id,
+                image='posts/small_1.gif',
             ).exists()
         )
 
-    def test_create_comment_authorised_user(cls):
+    def test_create_comment_authorised_user(self):
         """Валидная форма создает комментарий - авторизованный
         пользователь."""
-        comments_count = cls.post.comments.count()
-        post_id = cls.post.id
-        user_id = cls.user.id
+        comments_count = self.post.comments.count()
+        post_id = self.post.id
+        user_id = self.user.id
         form_data = {
             'text': 'Тестовый комментарий',
         }
-        response = cls.authorized_client.post(
+        response = self.authorized_client.post(
             reverse('posts:add_comment', kwargs={'post_id': post_id}),
             data=form_data,
             follow=True
         )
-        cls.assertRedirects(response, reverse(
+        self.assertRedirects(response, reverse(
             'posts:post_detail', kwargs={'post_id': post_id}))
-        cls.assertEqual(cls.post.comments.count(), comments_count + 1)
-        cls.assertTrue(
+        self.assertEqual(self.post.comments.count(), comments_count + 1)
+        self.assertTrue(
             Comment.objects.filter(
                 author_id=user_id,
                 text=form_data['text'],
@@ -141,18 +149,18 @@ class TaskCreateFormTests(TestCase):
             ).exists()
         )
 
-    def test_create_comment(cls):
+    def test_create_comment(self):
         """Неавторизованный пользователь не может оставить комментарий"""
-        comments_count = cls.post.comments.count()
-        post_id = cls.post.id
+        comments_count = self.post.comments.count()
+        post_id = self.post.id
         form_data = {
             'text': 'Тестовый комментарий',
         }
-        response = cls.guest_client.post(
+        response = self.guest_client.post(
             reverse('posts:add_comment', kwargs={'post_id': post_id}),
             data=form_data,
             follow=True
         )
-        cls.assertRedirects(
+        self.assertRedirects(
             response, f'/auth/login/?next=/posts/{post_id}/comment/')
-        cls.assertEqual(cls.post.comments.count(), comments_count)
+        self.assertEqual(self.post.comments.count(), comments_count)
